@@ -1,0 +1,138 @@
+---
+title: "Homework 6 - Statistical Data Analysis"
+author: "Yigit Kasal"
+date: "2025-06-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(readr)
+library(tidyverse)
+library(Rmisc)
+library(languageR)
+library(car)
+library(lingpsych)
+library(lmerTest)
+```
+
+# Exercise 1
+
+## Load and prepare data
+
+```{r}
+stress <- read_delim("StressSymptoms2.txt",
+                     delim = "\t",
+                     locale = locale(encoding = "UTF-8"),
+                     trim_ws = TRUE)
+
+stress$gender_coded <- ifelse(stress$gender == "man", -0.5,
+                              ifelse(stress$gender == "woman", 0.5, NA_real_))
+```
+
+## Fit regression with interaction
+
+```{r}
+mod <- lm(symptoms ~ stress * gender_coded, data = stress)
+summary(mod)$coefficients
+```
+
+**Interpretation:**  
+Intercept = 71.047  
+Slope (stress) = 0.91  
+Slope (gender_coded) = -16.77  
+Interaction = 0.85
+
+## Manually add interaction term
+
+```{r}
+stress$stressXgender <- stress$stress * stress$gender_coded
+
+mod2 <- lm(symptoms ~ stress + gender_coded + stressXgender, data = stress)
+summary(mod2)$coefficients
+```
+
+**Observation:**  
+Manually creating the interaction term gives the same results as using `*`.
+
+# Exercise 2
+
+## Load and prepare EEG data
+
+```{r}
+mydata <- read.csv("EEG_Indiv_RT_Dataset20180706out.csv", sep = ";")
+mydata <- mydata[mydata$Accuracy == "1", ]
+mydata <- mydata[!is.na(mydata$Latency), ]
+mydata <- mydata[!is.na(mydata$AA), ]
+mydata$AoA <- as.factor(as.character(mydata$AoA))
+contrasts(mydata$AoA) <- c(-0.5, 0.5)
+```
+
+## Check multicollinearity
+
+```{r}
+ex2m <- lmer(Latency ~ AoA + freqfilms2 + (1 | PP.id) + (1 | Item), data = mydata, REML = FALSE)
+summary(ex2m)
+
+lm_vif <- lm(Latency ~ AoA + freqfilms2, data = mydata)
+car::vif(lm_vif)
+```
+
+## Linear model with both predictors
+
+```{r}
+lm_full <- lm(Latency ~ freqfilms2 + AoA, data = mydata)
+summary(lm_full)$coefficients
+```
+
+## Likelihood ratio test
+
+```{r}
+m_freq <- lmer(Latency ~ freqfilms2 + (1 | PP.id) + (1 | Item), data = mydata, REML = FALSE)
+m_full <- lmer(Latency ~ freqfilms2 + AoA + (1 | PP.id) + (1 | Item), data = mydata, REML = FALSE)
+anova(m_freq, m_full)
+```
+
+**Conclusion:**  
+Even after controlling for frequency, AoA significantly affects naming latency.
+
+## Interaction effect
+
+```{r}
+mydata$freq_c <- with(mydata, freqfilms2 - mean(freqfilms2, na.rm = TRUE))
+
+m_int <- lmer(Latency ~ AoA * freq_c + (1 | PP.id) + (1 | Item), data = mydata, REML = FALSE)
+summary(m_int)$coefficients
+```
+
+**Conclusion:**  
+No significant interaction between AoA and frequency. AoA has a consistent effect.
+
+## Assumption checks
+
+```{r}
+mydata$invLatency <- 1 / mydata$Latency
+m_inv <- lmer(invLatency ~ AoA * freq_c + (1 | PP.id) + (1 | Item), data = mydata, REML = FALSE)
+
+par(mfrow = c(1, 2))
+qqnorm(resid(m_int), main = "m_int QQ-plot (raw latency)")
+qqline(resid(m_int))
+
+plot(fitted(m_int), resid(m_int), xlab = "Fitted values", ylab = "Residuals",
+     main = "m_int Residuals vs fitted")
+abline(h = 0, lty = 2)
+
+par(mfrow = c(1, 2))
+qqnorm(resid(m_inv), main = "m_inv QQ-plot (1/latency)")
+qqline(resid(m_inv))
+
+plot(fitted(m_inv), resid(m_inv), xlab = "Fitted values", ylab = "Residuals",
+     main = "m_inv Residuals vs fitted")
+abline(h = 0, lty = 2)
+
+par(mfrow = c(1, 1))
+```
+
+**Interpretation:**  
+Reciprocal transformation improves normality and homoscedasticity of residuals.
