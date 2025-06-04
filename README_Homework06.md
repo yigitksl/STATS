@@ -13,11 +13,12 @@ This project involves:
 - Model diagnostics (QQ plots and residual checks)
 - Interpretation of model parameters
 
-## Files
+## Topics Covered
 
-- `Homework06_YigitKasal.Rmd`: The main R Markdown file containing the full analysis.
-- `StressSymptoms2.txt`: Dataset for Exercise 1 (not included here).
-- `EEG_Indiv_RT_Dataset20180706out.csv`: Dataset for Exercise 2 (not included here).
+- Centering predictors to reduce multicollinearity
+- Interpreting interaction terms
+- Handling skewed residuals with transformations
+- Evaluating model fit and assumptions
 
 ## Required Packages
 
@@ -28,19 +29,6 @@ install.packages(c("tidyverse", "readr", "car", "lmerTest", "languageR", "MASS",
 # If needed:
 # devtools::install_github("vasishth/lingpsych")
 ```
-
-## Topics Covered
-
-- Centering predictors to reduce multicollinearity
-- Interpreting interaction terms
-- Handling skewed residuals with transformations
-- Evaluating model fit and assumptions
-
-## Notes
-
-This was an academic assignment. All data and code are for educational purposes only.
-
-## Author
 
 Yigit Kasal  
 MSc Linguistics Student  
